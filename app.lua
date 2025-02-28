@@ -23,3 +23,7 @@ function APP_ITERATION()
     delay(100)--ms
 end
 
+
+function APP_MOUSE_DOWN(x, y)
+    print("app.lua: Mouse down at "  .. x .. "|" .. y)
+end

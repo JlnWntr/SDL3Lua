@@ -176,6 +176,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
+  int result{};
   switch (event->type) {
   case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
     return SDL_APP_SUCCESS;
@@ -194,19 +195,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     break;
   case SDL_EVENT_FINGER_DOWN: {
     const float mouse[] = {event->tfinger.x, event->tfinger.y};
-    lua.Call("APP_MOUSE_DOWN", 2, mouse);
+    lua.Call("APP_MOUSE_DOWN", 2, mouse, result);
   } break;
   case SDL_EVENT_FINGER_UP: {
     const float mouse[] = {event->tfinger.x, event->tfinger.y};
-    lua.Call("APP_MOUSE_UP", 2, mouse);
+    lua.Call("APP_MOUSE_UP", 2, mouse, result);
   } break;
   case SDL_EVENT_MOUSE_BUTTON_DOWN: {
     const float mouse[] = {event->button.x, event->button.y};
-    lua.Call("APP_MOUSE_DOWN", 2, mouse);
+    lua.Call("APP_MOUSE_DOWN", 2, mouse, result);
   } break;
   case SDL_EVENT_MOUSE_BUTTON_UP: {
     const float mouse[] = {event->button.x, event->button.y};
-    lua.Call("APP_MOUSE_UP", 2, mouse);
+    lua.Call("APP_MOUSE_UP", 2, mouse, result);
   } break;
   }
   return SDL_APP_CONTINUE;
