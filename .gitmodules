@@ -1,0 +1,3 @@
+[submodule "Lua-Adapter"]
+	path = Lua-Adapter
+	url = https://github.com/JlnWntr/Lua-Adapter.git
