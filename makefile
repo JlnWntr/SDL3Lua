@@ -40,8 +40,8 @@ flags_mac=-Wall -std=c++17 -D_GLIBCXX_USE_NANOSLEEP -I$(PATH_LUA) -DLUA_ADAPTER_
 $(OUT)/libLua.so: $(LUA)
 	g++ -shared $(LUA) -o $(OUT)/libLua.so $(flags_mac)
 
-app_mac.o: app.cpp
-	g++ -c app.cpp -o app_mac.o $(flags_mac)
+app_mac.o: test.cpp
+	g++ -c test.cpp -o app_mac.o $(flags_mac)
 
 mac: app.o  $(OUT)/libLua.so
 	g++ -o $(OUT)/app app_mac.o $(OUT)/libLua.so $(flags_mac) -lSDL3main -lSDL3 -Wl,-rpath,/usr/local/lib

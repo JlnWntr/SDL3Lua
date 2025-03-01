@@ -1,3 +1,6 @@
+/*This is a short example. It renders some sprite animation.*/
+
+
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -15,53 +18,6 @@ SDL_Texture *Texture_data{nullptr};
 
 constexpr unsigned short int DEFAULT_WINDOW_WIDTH{1179};
 constexpr unsigned short int DEFAULT_WINDOW_HEIGHT{2556};
-
-int Lua_Draw_Text(lua_State *L) {
-  if (not L)
-    return 0;
-  const float x{(float)lua_tonumber(L, 1)};
-  const float y{(float)lua_tonumber(L, 2)};
-  const char *const text{lua_tostring(L, 3)};
-  SDL_RenderDebugTextFormat(Renderer, x, y, text);
-  return 0;
-}
-
-int Lua_Set_Color(lua_State *L) {
-  if (not L)
-    return 0;
-  const unsigned char r{(unsigned char)(lua_tointeger(L, 1))};
-  const unsigned char g{(unsigned char)(lua_tointeger(L, 2))};
-  const unsigned char b{(unsigned char)(lua_tointeger(L, 3))};
-  const unsigned char a{(unsigned char)(lua_tointeger(L, 4))};
-  SDL_SetRenderDrawColor(Renderer, r, g, b, a);
-  return 0;
-}
-
-int Lua_Fill_Rect(lua_State *L) {
-  if (not L)
-    return 0;
-  const SDL_FRect rect{(float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2),
-                       (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4)};
-  SDL_RenderFillRect(Renderer, &rect);
-  return 0;
-}
-
-int Lua_Draw_Line(lua_State *L) {
-  if (not L)
-    return 0;
-  SDL_RenderLine(Renderer, (float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2),
-                 (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4));
-  return 0;
-}
-
-int Lua_Draw_Rect(lua_State *L) {
-  if (not L)
-    return 0;
-  const SDL_FRect rect{(float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2),
-                       (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4)};
-  SDL_RenderRect(Renderer, &rect);
-  return 0;
-}
 
 int Lua_Render_Sprite(lua_State *L) {
   if (not Texture_data)
@@ -129,15 +85,10 @@ int Lua_Print(lua_State *L) {
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
-  if ((lua.PushFunction(Lua_Set_Color, "Lua_Set_Color") == false) or
-      (lua.PushFunction(Lua_Print, "print") == false) or
+  if ((lua.PushFunction(Lua_Print, "print") == false) or
       (lua.PushFunction(Lua_Delay, "delay") == false) or
-      (lua.PushFunction(Lua_Load_Spritelibrary, "Lua_Load_Spritelibrary") ==
-       false) or
-      (lua.PushFunction(Lua_Render_Sprite, "Lua_Render_Sprite") == false) or
-      (lua.PushFunction(Lua_Draw_Rect, "Lua_Draw_Rect") == false) or
-      (lua.PushFunction(Lua_Draw_Line, "Lua_Draw_Line") == false) or
-      (lua.PushFunction(Lua_Draw_Text, "Lua_Draw_Text") == false)) {
+      (lua.PushFunction(Lua_Load_Spritelibrary, "Lua_Load_Spritelibrary") == false) or
+      (lua.PushFunction(Lua_Render_Sprite, "Lua_Render_Sprite") == false)) {
     SDL_Log("Could not push c-function(s) to Lua");
     return SDL_APP_FAILURE;
   }
@@ -147,8 +98,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  SDL_SetAppMetadata("Example Renderer Debug Texture", "1.0",
-                     "com.example.renderer-debug-text");
+  SDL_SetAppMetadata("Example Lua Blit", "1.0",
+                     "com.example.lua-blit");
 
   if (SDL_Init(SDL_INIT_VIDEO) == false) {
     SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -163,7 +114,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_Log("Could not load 'WINDOW_HEIGHT' from Lua");
 
   if (SDL_CreateWindowAndRenderer(
-          "examples/renderer/debug-text", window_width, window_height,
+          "examples/renderer/blit", window_width, window_height,
           0, &Window,
           &Renderer) == false) {
     SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
@@ -193,21 +144,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     break;
   case SDL_EVENT_KEY_DOWN:
     break;
-  case SDL_EVENT_FINGER_DOWN: {
-    const float mouse[] = {event->tfinger.x, event->tfinger.y};
-    lua.Call("APP_MOUSE_DOWN", 2, mouse, result);
-  } break;
-  case SDL_EVENT_FINGER_UP: {
-    const float mouse[] = {event->tfinger.x, event->tfinger.y};
-    lua.Call("APP_MOUSE_UP", 2, mouse, result);
-  } break;
   case SDL_EVENT_MOUSE_BUTTON_DOWN: {
     const float mouse[] = {event->button.x, event->button.y};
     lua.Call("APP_MOUSE_DOWN", 2, mouse, result);
-  } break;
-  case SDL_EVENT_MOUSE_BUTTON_UP: {
-    const float mouse[] = {event->button.x, event->button.y};
-    lua.Call("APP_MOUSE_UP", 2, mouse, result);
   } break;
   }
   return SDL_APP_CONTINUE;
