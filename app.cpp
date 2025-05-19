@@ -1,8 +1,6 @@
 /*This is a growing "library" of useful C(++)-functions which you can call from
 Lua. Compile on mac with something like: 
-g++ -o app_mac SDL3Lua/app.cpp -lSDL3 -llua -ldl -Wl,-rpath,/usr/local/lib -Wall -std=c++17 -DHAVE_MIDI
-../Mini-Midi-Librarian/rtmidi/RtMidi.cpp -D__MACOSX_CORE__ -framework CoreMIDI
--framework CoreAudio -framework CoreFoundation -g -fsanitize=address
+g++ -o app_mac SDL3Lua/app.cpp ../Mini-Midi-Librarian/rtmidi/RtMidi.cpp -lSDL3 -DHAVE_TTF -lSDL3_ttf -llua -ldl -Wl,-rpath,/usr/local/lib -Wall -std=c++17 -DHAVE_MIDI -D__MACOSX_CORE__ -framework CoreMIDI -framework CoreAudio -framework CoreFoundation -g -fsanitize=address
 
 g++ -o app_mac SDL3Lua/app.cpp -DHAVE_TTF -lSDL3 -lSDL3_ttf -llua -ldl -Wl,-rpath,/usr/local/lib -Wall -std=c++17 -g -fsanitize=address
 
@@ -476,8 +474,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  if (lua.Load("lua/app.lua") == false) {
-    SDL_Log("Could not load 'app.lua'");
+  if (lua.Load((argc > 1) ? argv[1] : "lua/app.lua") == false) {
+    SDL_Log("Could not load lua code");
     return SDL_APP_FAILURE;
   }
 
@@ -489,7 +487,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     midiout.closePort();
   */
-  SDL_SetAppMetadata(DEFAULT_TITLE, "1.0", "com.example.lua-sdl");
+  SDL_SetAppMetadata(DEFAULT_TITLE, "1.0", "com.example.lua-sdl"); // TODO enter your company here :)
 
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
     SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -509,10 +507,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   SDL_ResumeAudioStreamDevice(Stream);
   //*/
   if (lua.Get("WINDOW_WIDTH", Window_width) == false)
-    SDL_Log("Could not load 'WINDOW_WIDTH' from Lua");
+    SDL_Log("Could not load 'WINDOW_WIDTH' from Lua: %s", SDL_GetError());
   int Window_height{DEFAULT_WINDOW_HEIGHT};
   if (lua.Get("WINDOW_HEIGHT", Window_height) == false)
-    SDL_Log("Could not load 'WINDOW_HEIGHT' from Lua");
+    SDL_Log("Could not load 'WINDOW_HEIGHT' from Lua: %s", SDL_GetError());
 
   if (SDL_CreateWindowAndRenderer(DEFAULT_TITLE, Window_width, Window_height,
                                   SDL_WINDOW_HIGH_PIXEL_DENSITY, &Window,
@@ -532,10 +530,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
   if ((lua.Set("WINDOW_WIDTH", Window_pixelwidth) == false) or
       (lua.Set("WINDOW_HEIGHT", Window_pixelheight) == false))
-    SDL_Log("Could not set window-dimensions for lua");
+    SDL_Log("Could not set window-dimensions for lua: %s", SDL_GetError());
 
   if (SDL_SetRenderVSync(Renderer, 1) == false)
-    SDL_Log("Could not activate vsync.");
+    SDL_Log("Could not activate vsync: %s", SDL_GetError());
 
 #ifdef HAVE_MIDI
   if (MIDI_in.getPortCount() > 0) {
@@ -547,9 +545,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
 #ifdef HAVE_TTF
   TTF_Init();
-  Font = TTF_OpenFont(DEFAULT_FONT_FILE, DEFAULT_FONT_SIZE);
+  /*Font = TTF_OpenFont(DEFAULT_FONT_FILE, DEFAULT_FONT_SIZE);
   if (not Font) 
-    SDL_Log("Could not load font: %s", SDL_GetError());
+    SDL_Log("Could not load font: %s", SDL_GetError());//*/
 #endif
 /*
   int count = 0;
