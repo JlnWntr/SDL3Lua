@@ -18,10 +18,10 @@ g++ -o app_mac SDL3Lua/app.cpp -DHAVE_TTF -lSDL3 -lSDL3_ttf -llua -ldl -Wl,-rpat
 LuaAdapter lua{};
 constexpr char DEFAULT_ORGANISATION[] = {"jlnwntr"};
 constexpr char DEFAULT_TITLE[] = {"SDL3Lua"};
-#ifdef HAVE_TTF
+/*#ifdef HAVE_TTF
 constexpr char DEFAULT_FONT_FILE[] = {"gfx/monoflow-regular.otf"}; // TODO: this should be in a config.lua
 constexpr char DEFAULT_FONT_SIZE = 64;
-#endif
+#endif*/
 SDL_Window *Window{nullptr};
 SDL_Renderer *Renderer{nullptr};
 SDL_AudioStream *Stream{nullptr};
@@ -473,8 +473,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_Log("Could not push c-function(s) to Lua");
     return SDL_APP_FAILURE;
   }
-
-  if (lua.Load((argc > 1) ? argv[1] : "lua/app.lua") == false) {
+#ifdef LUA_USE_IOS
+  lua.DoString("LUA_FOLDER = ''");
+  lua.DoString("ART_FOLDER = ''");
+#endif
+  if (lua.Load((argc > 1) ? argv[1] : "app.lua") == false) {
     SDL_Log("Could not load lua code");
     return SDL_APP_FAILURE;
   }
@@ -549,11 +552,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   if (not Font) 
     SDL_Log("Could not load font: %s", SDL_GetError());//*/
 #endif
-/*
+//*
   int count = 0;
   SDL_JoystickID *joysticks = SDL_GetJoysticks(&count);
   SDL_Log("Found %d joysticks.", count);
-*/
+//*/
+
   lua.Call("APP_INIT");
   return SDL_APP_CONTINUE;
 }
@@ -580,7 +584,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     // SDL_Log("%d", event->key.key);
     lua.Call("APP_KEY_DOWN", (int)event->key.key);
     break;
-  case SDL_EVENT_FINGER_DOWN: {
+ /* case SDL_EVENT_FINGER_DOWN: {
     const float mouse[] = {event->tfinger.x * Window_pixelwidth,
                            event->tfinger.y * Window_pixelheight};
     lua.Call("APP_MOUSE_DOWN", 2, mouse, result);
@@ -589,7 +593,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     const float mouse[] = {event->tfinger.x * Window_pixelwidth,
                            event->tfinger.y * Window_pixelheight};
     lua.Call("APP_MOUSE_UP", 2, mouse, result);
-  } break;
+  } break;//*/
   case SDL_EVENT_MOUSE_BUTTON_DOWN: {
     const float mouse[] = {event->button.x * Window_scale,
                            event->button.y * Window_scale};
