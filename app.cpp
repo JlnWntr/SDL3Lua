@@ -105,7 +105,7 @@ int Lua_Set_Color(lua_State *L) {
   return 0;
 }
 
-int Lua_Set_Scale(lua_State *L) {
+int Lua_Set_Render_Scale(lua_State *L) {
   if (not L)
     return 0;
   const float scale{(float)lua_tonumber(L, 1)};
@@ -337,30 +337,28 @@ dstLen)) {
 //*/
 
 int Lua_Haptic(lua_State *L) {
-  SDL_Haptic *haptic = NULL;
-
-  // Open the device
-  SDL_HapticID *haptics = SDL_GetHaptics(NULL);
-  if (haptics) {
+  SDL_Haptic *haptic{nullptr};
+  int count {0};
+  SDL_HapticID *haptics {SDL_GetHaptics(&count)};
+  if (haptics) 
     haptic = SDL_OpenHaptic(haptics[0]);
-    SDL_free(haptics);
-  }
+
+  SDL_free(haptics);
+  SDL_Log("Found %d haptic device(s).", count);
+
   if (haptic == NULL)
     return 1;
 
-  // Initialize simple rumble
-  if (!SDL_InitHapticRumble(haptic))
+  if (SDL_InitHapticRumble(haptic) == false)
     return 1;
-
-  // Play effect at 50% strength for 2 seconds
-  if (!SDL_PlayHapticRumble(haptic, 0.5, 2000))
+  
+  if (SDL_PlayHapticRumble(haptic, 0.5, 2000) == false)
     return 1;
+   
   SDL_Delay(2000);
-
-  // Clean up
   SDL_CloseHaptic(haptic);
 
-  return 1; // Success
+  return 1; 
 }
 
 int Lua_Read_File(lua_State *L) {
@@ -447,7 +445,7 @@ int Lua_Write_File(lua_State *L) {
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   if ((lua.PushFunction(Lua_Set_Color, "Lua_Set_Color") == false) or
-      (lua.PushFunction(Lua_Set_Scale, "Lua_Set_Scale") == false) or
+      (lua.PushFunction(Lua_Set_Render_Scale, "Lua_Set_Render_Scale") == false) or
       (lua.PushFunction(Lua_Get_Queue_Audio_Length,
                         "Lua_Get_Queue_Audio_Length") == false) or
       (lua.PushFunction(Lua_Queue_Audio, "Lua_Queue_Audio") == false) or
@@ -492,7 +490,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   */
   SDL_SetAppMetadata(DEFAULT_TITLE, "1.0", "com.example.lua-sdl"); // TODO enter your company here :)
 
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO  | SDL_INIT_HAPTIC) == false) {
     SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
@@ -552,11 +550,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   if (not Font) 
     SDL_Log("Could not load font: %s", SDL_GetError());//*/
 #endif
-//*
+/*
   int count = 0;
   SDL_JoystickID *joysticks = SDL_GetJoysticks(&count);
   SDL_Log("Found %d joysticks.", count);
 //*/
+
+Lua_Haptic(nullptr);
 
   lua.Call("APP_INIT");
   return SDL_APP_CONTINUE;
