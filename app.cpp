@@ -200,7 +200,7 @@ int Lua_Draw_Text_Label(lua_State *L) {
   SDL_FRect box {(float)lua_tonumber(L, 2), (float)lua_tonumber(L, 3), (float)texture->w, (float)texture->h};  
   
   SDL_RenderTexture(Renderer, texture, NULL, &box);
-  return 1;
+  return 0;
 }
 
 int Lua_Get_Size_Label(lua_State *L) {
@@ -214,6 +214,18 @@ int Lua_Get_Size_Label(lua_State *L) {
     return 2;
   }
   return 0;
+}
+
+int Lua_Destroy_Text_Label(lua_State *L) {
+  if (not L)  return 0;
+  bool result = false;
+  SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)};
+  if (texture){
+    SDL_DestroyTexture(texture);
+    result = true;
+  }
+  lua_pushboolean(L, result);
+  return 1;
 }
 
 int Lua_Load_Font(lua_State *L) {
@@ -458,6 +470,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
                         "Lua_Render_Texture_Rotated") == false) or
       #ifdef HAVE_TTF
       (lua.PushFunction(Lua_Create_Text_Label, "Lua_Create_Text_Label") == false) or
+      (lua.PushFunction(Lua_Destroy_Text_Label, "Lua_Destroy_Text_Label") == false) or
       (lua.PushFunction(Lua_Draw_Text_Label, "Lua_Draw_Text_Label") == false) or
       (lua.PushFunction(Lua_Load_Font, "Lua_Load_Font") == false) or
       (lua.PushFunction(Lua_Get_Size_Label, "Lua_Get_Size_Label") == false) or
