@@ -202,7 +202,25 @@ int Lua_Draw_Text_Label(lua_State *L) {
   SDL_RenderTexture(Renderer, texture, NULL, &box);
   return 0;
 }
+/*
 
+
+int Lua_Set_Texture_Mod(lua_State *L) {
+  if (not L)  return 0;
+  
+  SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)};
+ 
+  if (not texture)
+    return 0;
+
+  float r {(float)lua_tonumber(L, 2)};
+  float g {(float)lua_tonumber(L, 3)};
+  float b {(float)lua_tonumber(L, 4)};
+  SDL_SetTextureColorModFloat(texture, r, g, b);  
+  
+  return 0;
+}
+//*/
 int Lua_Get_Size_Label(lua_State *L) {
   if (not L)  return 0;
   SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)};
@@ -463,9 +481,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
       (lua.PushFunction(Lua_Queue_Audio, "Lua_Queue_Audio") == false) or
       (lua.PushFunction(Lua_Dequeue_Audio, "Lua_Dequeue_Audio") == false) or
       (lua.PushFunction(Lua_Print, "print") == false) or
-      (lua.PushFunction(Lua_Delay, "delay") == false) or
+      (lua.PushFunction(Lua_Delay, "Lua_Delay") == false) or
       (lua.PushFunction(Lua_Load_BMP, "Lua_Load_BMP") == false) or
       (lua.PushFunction(Lua_Render_Texture, "Lua_Render_Texture") == false) or
+     // (lua.PushFunction(Lua_Set_Texture_Mod, "Lua_Set_Texture_Mod") == false) or
       (lua.PushFunction(Lua_Render_Texture_Rotated,
                         "Lua_Render_Texture_Rotated") == false) or
       #ifdef HAVE_TTF
