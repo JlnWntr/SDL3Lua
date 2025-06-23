@@ -3,6 +3,7 @@ Lua. Compile on mac with something like:
 g++ -o app_mac SDL3Lua/app.cpp ../Mini-Midi-Librarian/rtmidi/RtMidi.cpp -lSDL3 -DHAVE_TTF -lSDL3_ttf -llua -ldl -Wl,-rpath,/usr/local/lib -Wall -std=c++17 -DHAVE_MIDI -D__MACOSX_CORE__ -framework CoreMIDI -framework CoreAudio -framework CoreFoundation -g -fsanitize=address
 
 g++ -o app_mac SDL3Lua/app.cpp -DHAVE_TTF -lSDL3 -lSDL3_ttf -llua -ldl -Wl,-rpath,/usr/local/lib -Wall -std=c++17 -g -fsanitize=address
+
 */
 
 #define SDL_MAIN_USE_CALLBACKS 1
@@ -17,7 +18,10 @@ g++ -o app_mac SDL3Lua/app.cpp -DHAVE_TTF -lSDL3 -lSDL3_ttf -llua -ldl -Wl,-rpat
 LuaAdapter lua{};
 constexpr char DEFAULT_ORGANISATION[] = {"jlnwntr"};
 constexpr char DEFAULT_TITLE[] = {"SDL3Lua"};
-
+/*#ifdef HAVE_TTF
+constexpr char DEFAULT_FONT_FILE[] = {"gfx/monoflow-regular.otf"}; // TODO: this should be in a config.lua
+constexpr char DEFAULT_FONT_SIZE = 64;
+#endif*/
 SDL_Window *Window{nullptr};
 SDL_Renderer *Renderer{nullptr};
 SDL_AudioStream *Stream{nullptr};
@@ -45,7 +49,7 @@ float Window_scale{1.0};
 #endif
 RtMidiIn MIDI_in{};
 #endif
-/* --------------- AUDIO ---------------------- */
+
 int Lua_Get_Queue_Audio_Length(lua_State *L) {
   if (not L)
     return 0;
@@ -80,8 +84,15 @@ int Lua_Dequeue_Audio(lua_State *L) {
   return 0;
 }
 
-
-/* --------------- DRAWING -------------------- */
+int Lua_Draw_Text(lua_State *L) {
+  if (not L)
+    return 0;
+  const float x{(float)lua_tonumber(L, 1)};
+  const float y{(float)lua_tonumber(L, 2)};
+  const char *const text{lua_tostring(L, 3)};
+  SDL_RenderDebugTextFormat(Renderer, x, y, "%s", text); // TODO format???
+  return 0;
+}
 
 int Lua_Set_Color(lua_State *L) {
   if (not L)
@@ -145,32 +156,6 @@ int Lua_Render_Texture(lua_State *L) {
   return 0;
 }
 
-int Lua_Render_Texture_Rotated(lua_State *L) {
-  if (not Texture_data)
-    return 0;
-  const SDL_FRect blit{(float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2),
-                       (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4)};
-  const SDL_FRect blot{(float)lua_tonumber(L, 5), (float)lua_tonumber(L, 6),
-                       (float)lua_tonumber(L, 7), (float)lua_tonumber(L, 8)};
-  const double angle{lua_tonumber(L, 9)};
-  SDL_RenderTextureRotated(Renderer, Texture_data, &blit, &blot, angle, NULL,
-                           SDL_FLIP_NONE);
-
-  return 0;
-}
-
-
-/* ------------ TEXT RENDERING -------------- */
-int Lua_Draw_Text(lua_State *L) {
-  if (not L)
-    return 0;
-  const float x{(float)lua_tonumber(L, 1)};
-  const float y{(float)lua_tonumber(L, 2)};
-  const char *const text{lua_tostring(L, 3)};
-  SDL_RenderDebugTextFormat(Renderer, x, y, "%s", text); // TODO format???
-  return 0;
-}
-
 #ifdef HAVE_TTF
 TTF_Font *Font;
 
@@ -217,25 +202,7 @@ int Lua_Draw_Text_Label(lua_State *L) {
   SDL_RenderTexture(Renderer, texture, NULL, &box);
   return 0;
 }
-/*
 
-
-int Lua_Set_Texture_Mod(lua_State *L) {
-  if (not L)  return 0;
-  
-  SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)};
- 
-  if (not texture)
-    return 0;
-
-  float r {(float)lua_tonumber(L, 2)};
-  float g {(float)lua_tonumber(L, 3)};
-  float b {(float)lua_tonumber(L, 4)};
-  SDL_SetTextureColorModFloat(texture, r, g, b);  
-  
-  return 0;
-}
-//*/
 int Lua_Get_Size_Label(lua_State *L) {
   if (not L)  return 0;
   SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)};
@@ -279,8 +246,132 @@ int Lua_Load_Font(lua_State *L) {
 
 #endif
 
+int Lua_Render_Texture_Rotated(lua_State *L) {
+  if (not Texture_data)
+    return 0;
+  const SDL_FRect blit{(float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2),
+                       (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4)};
+  const SDL_FRect blot{(float)lua_tonumber(L, 5), (float)lua_tonumber(L, 6),
+                       (float)lua_tonumber(L, 7), (float)lua_tonumber(L, 8)};
+  const double angle{lua_tonumber(L, 9)};
+  SDL_RenderTextureRotated(Renderer, Texture_data, &blit, &blot, angle, NULL,
+                           SDL_FLIP_NONE);
 
-/* --------------- FILE IO -------------------- */
+  return 0;
+}
+
+int Lua_Load_BMP(lua_State *L) {
+  if (not L)
+    return 0;
+
+  bool result = true;
+  char *bmp_path;
+  SDL_asprintf(&bmp_path, "%s%s", SDL_GetBasePath(), lua_tostring(L, 1));
+  SDL_Surface *surface{SDL_LoadBMP(bmp_path)};
+  if (not surface) {
+    SDL_Log("Couldn't load bitmap: %s", SDL_GetError());
+    result = false;
+  } else {
+    Texture_width = surface->w;
+    Texture_height = surface->h;
+    SDL_SetSurfaceColorKey(
+        surface, true,
+        SDL_MapRGB(SDL_GetPixelFormatDetails(surface->format), NULL, 0xFF, 0x00,
+                   0xFF)); // Pink-pixels are transparent
+
+    Texture_data = SDL_CreateTextureFromSurface(Renderer, surface);
+    if (not Texture_data) {
+      SDL_Log("Couldn't create static texture: %s", SDL_GetError());
+      result = false;
+    } else {
+      SDL_DestroySurface(surface);
+      /*SDL_SetTextureScaleMode(
+          Texture_data,
+          SDL_SCALEMODE_NEAREST); // Textures are scaled "pixelated".
+    */}
+  }
+  SDL_free(bmp_path);
+  lua_pushboolean(L, result);
+  return 1;
+}
+
+int Lua_Delay(lua_State *L) {
+  if (!L)
+    return 0;
+  struct timespec time_spec;
+  time_spec.tv_sec = 0;
+  time_spec.tv_nsec = lua_tointeger(L, 1) * 1000000;
+  nanosleep(&time_spec, nullptr);
+  return 0;
+}
+
+int Lua_Print(lua_State *L) {
+  if (!L)
+    return 0;
+  const char *const text{lua_tostring(L, 1)};
+  SDL_Log("(lua) %s", text);
+  return 0;
+}
+
+/*
+void ReadGameData(void)
+{
+    extern char** fileNames;
+    extern size_t numFiles;
+
+    SDL_Storage *title = SDL_OpenTitleStorage(NULL, 0);
+    if (title == NULL) {
+        // Something bad happened!
+    }
+    while (!SDL_StorageReady(title)) {
+        SDL_Delay(1);
+    }
+
+    for (size_t i = 0; i < numFiles; i += 1) {
+        void* dst;
+        Uint64 dstLen = 0;
+
+        if (SDL_GetStorageFileSize(title, fileNames[i], &dstLen) && dstLen > 0)
+{ dst = SDL_malloc(dstLen); if (SDL_ReadStorageFile(title, fileNames[i], dst,
+dstLen)) {
+                // A bunch of stuff happens here
+            } else {
+                // Something bad happened!
+            }
+            SDL_free(dst);
+        } else {
+            // Something bad happened!
+        }
+    }
+
+    SDL_CloseStorage(title);
+}
+//*/
+
+int Lua_Haptic(lua_State *L) {
+  SDL_Haptic *haptic{nullptr};
+  int count {0};
+  SDL_HapticID *haptics {SDL_GetHaptics(&count)};
+  if (haptics) 
+    haptic = SDL_OpenHaptic(haptics[0]);
+
+  SDL_free(haptics);
+  SDL_Log("Found %d haptic device(s).", count);
+
+  if (haptic == NULL)
+    return 1;
+
+  if (SDL_InitHapticRumble(haptic) == false)
+    return 1;
+  
+  if (SDL_PlayHapticRumble(haptic, 0.5, 2000) == false)
+    return 1;
+   
+  SDL_Delay(2000);
+  SDL_CloseHaptic(haptic);
+
+  return 1; 
+}
 
 int Lua_Read_File(lua_State *L) {
   if (not L)
@@ -364,89 +455,6 @@ int Lua_Write_File(lua_State *L) {
   return 1;
 }
 
-
-/* --------------- MISCELLANEOUS --------------- */
-
-int Lua_Load_BMP(lua_State *L) {
-  if (not L)
-    return 0;
-
-  bool result = true;
-  char *bmp_path;
-  SDL_asprintf(&bmp_path, "%s%s", SDL_GetBasePath(), lua_tostring(L, 1));
-  SDL_Surface *surface{SDL_LoadBMP(bmp_path)};
-  if (not surface) {
-    SDL_Log("Couldn't load bitmap: %s", SDL_GetError());
-    result = false;
-  } else {
-    Texture_width = surface->w;
-    Texture_height = surface->h;
-    SDL_SetSurfaceColorKey(
-        surface, true,
-        SDL_MapRGB(SDL_GetPixelFormatDetails(surface->format), NULL, 0xFF, 0x00,
-                   0xFF)); // Pink-pixels are transparent
-
-    Texture_data = SDL_CreateTextureFromSurface(Renderer, surface);
-    if (not Texture_data) {
-      SDL_Log("Couldn't create static texture: %s", SDL_GetError());
-      result = false;
-    } else {
-      SDL_DestroySurface(surface);
-      /*SDL_SetTextureScaleMode(
-          Texture_data,
-          SDL_SCALEMODE_NEAREST); // Textures are scaled "pixelated".
-    */}
-  }
-  SDL_free(bmp_path);
-  lua_pushboolean(L, result);
-  return 1;
-}
-
-int Lua_Delay(lua_State *L) {
-  if (!L)
-    return 0;
-  struct timespec time_spec;
-  time_spec.tv_sec = 0;
-  time_spec.tv_nsec = lua_tointeger(L, 1) * 1000000;
-  nanosleep(&time_spec, nullptr);
-  return 0;
-}
-
-int Lua_Print(lua_State *L) {
-  if (!L)
-    return 0;
-  const char *const text{lua_tostring(L, 1)};
-  SDL_Log("(lua) %s", text);
-  return 0;
-}
-/*
-int Lua_Haptic(lua_State *L) {
-  SDL_Haptic *haptic{nullptr};
-  int count {0};
-  SDL_HapticID *haptics {SDL_GetHaptics(&count)};
-  if (haptics) 
-    haptic = SDL_OpenHaptic(haptics[0]);
-
-  SDL_free(haptics);
-  SDL_Log("Found %d haptic device(s).", count);
-
-  if (haptic == NULL)
-    return 1;
-
-  if (SDL_InitHapticRumble(haptic) == false)
-    return 1;
-  
-  if (SDL_PlayHapticRumble(haptic, 0.5, 2000) == false)
-    return 1;
-   
-  SDL_Delay(2000);
-  SDL_CloseHaptic(haptic);
-
-  return 1; 
-}
-//*/
-
-
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   if ((lua.PushFunction(Lua_Set_Color, "Lua_Set_Color") == false) or
       (lua.PushFunction(Lua_Set_Render_Scale, "Lua_Set_Render_Scale") == false) or
@@ -455,10 +463,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
       (lua.PushFunction(Lua_Queue_Audio, "Lua_Queue_Audio") == false) or
       (lua.PushFunction(Lua_Dequeue_Audio, "Lua_Dequeue_Audio") == false) or
       (lua.PushFunction(Lua_Print, "print") == false) or
-      (lua.PushFunction(Lua_Delay, "Lua_Delay") == false) or
+      (lua.PushFunction(Lua_Delay, "delay") == false) or
       (lua.PushFunction(Lua_Load_BMP, "Lua_Load_BMP") == false) or
       (lua.PushFunction(Lua_Render_Texture, "Lua_Render_Texture") == false) or
-     // (lua.PushFunction(Lua_Set_Texture_Mod, "Lua_Set_Texture_Mod") == false) or
       (lua.PushFunction(Lua_Render_Texture_Rotated,
                         "Lua_Render_Texture_Rotated") == false) or
       #ifdef HAVE_TTF
@@ -480,7 +487,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 #ifdef LUA_USE_IOS
   lua.DoString("LUA_FOLDER = ''");
   lua.DoString("ART_FOLDER = ''");
-  lua.DoString("IOS = true");
 #endif
   if (lua.Load((argc > 1) ? argv[1] : "app.lua") == false) {
     SDL_Log("Could not load lua code");
@@ -497,14 +503,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   */
   SDL_SetAppMetadata(DEFAULT_TITLE, "1.0", "com.example.lua-sdl"); // TODO enter your company here :)
 
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO ) == false) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO  | SDL_INIT_HAPTIC) == false) {
     SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
   //*
   SDL_AudioSpec spec;
   spec.channels = 1;
-  spec.format = SDL_AUDIO_F32; // :)
+  spec.format = SDL_AUDIO_F32;
   spec.freq = 8000;
   Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
                                      NULL, NULL);
@@ -551,10 +557,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   }
 #endif
 
-  #ifdef HAVE_TTF
-    TTF_Init();
-  #endif
-  //Lua_Haptic(nullptr);
+#ifdef HAVE_TTF
+  TTF_Init();
+  /*Font = TTF_OpenFont(DEFAULT_FONT_FILE, DEFAULT_FONT_SIZE);
+  if (not Font) 
+    SDL_Log("Could not load font: %s", SDL_GetError());//*/
+#endif
+/*
+  int count = 0;
+  SDL_JoystickID *joysticks = SDL_GetJoysticks(&count);
+  SDL_Log("Found %d joysticks.", count);
+//*/
+
+Lua_Haptic(nullptr);
 
   lua.Call("APP_INIT");
   return SDL_APP_CONTINUE;
@@ -582,7 +597,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     // SDL_Log("%d", event->key.key);
     lua.Call("APP_KEY_DOWN", (int)event->key.key);
     break;
-  /* case SDL_EVENT_FINGER_DOWN: {
+ /* case SDL_EVENT_FINGER_DOWN: {
     const float mouse[] = {event->tfinger.x * Window_pixelwidth,
                            event->tfinger.y * Window_pixelheight};
     lua.Call("APP_MOUSE_DOWN", 2, mouse, result);
