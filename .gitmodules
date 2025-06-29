@@ -7,3 +7,6 @@
 [submodule "SDL_ttf"]
 	path = SDL_ttf
 	url = git@github.com:libsdl-org/SDL_ttf.git
+[submodule "lodepng"]
+	path = lodepng
+	url = git@github.com:lvandeve/lodepng.git
