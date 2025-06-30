@@ -1,4 +1,6 @@
 
+#include <SDL3_image/SDL_image.h>
+
 int Lua_Draw_Text(lua_State *L) {
   if (not L)
     return 0;
@@ -175,6 +177,31 @@ int Lua_Load_BMP(lua_State *L) {
     */}
   }
   SDL_free(bmp_path);
+  lua_pushlightuserdata(L, texture);
+  
+  return 1;
+}
+
+int Lua_Load_Image(lua_State *L) {
+  if (not L) return 0;
+
+  SDL_Texture *texture{nullptr};
+  char *path{nullptr};
+  SDL_asprintf(&path, "%s%s", SDL_GetBasePath(), lua_tostring(L, 1));
+  SDL_Surface *surface{IMG_Load(path)};
+  if (not surface) 
+    SDL_Log("Couldn't load image: %s", SDL_GetError());
+   else {
+    SDL_Surface *surface{nullptr};    
+    texture = SDL_CreateTextureFromSurface(Renderer, surface); 
+    
+    if (not texture)
+      SDL_Log("Couldn't create static texture: %s", SDL_GetError());
+    else
+      SDL_DestroySurface(surface);
+   
+  }
+  SDL_free(path);
   lua_pushlightuserdata(L, texture);
   
   return 1;
