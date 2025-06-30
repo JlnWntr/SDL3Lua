@@ -35,7 +35,7 @@ int Lua_Create_Text_Label(lua_State *L) {
 
 int Lua_Load_Font(lua_State *L) {
   bool result{false};
-  if (L) {
+  if ((L) and (TTF_Init() == true) and (not Font)) {
     size_t size{(size_t)lua_tointeger(L, 2)};
     if (size < 1) size = 1;
   

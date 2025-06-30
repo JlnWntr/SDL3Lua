@@ -1,26 +1,28 @@
 SDL_AudioSpec spec;
+SDL_AudioStream *Stream{nullptr};
+
+int Lua_Init_Audio(lua_State *L){
   spec.channels = 1;
   spec.format = SDL_AUDIO_F32;
   spec.freq = 8000;
-  Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
-                                     NULL, NULL);
+  Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
   if (not Stream) {
     SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
   SDL_ResumeAudioStreamDevice(Stream);
-
-
+ return 0;
+}
 
 int Lua_Get_Queue_Audio_Length(lua_State *L) {
-  if (not L)
+  if ((not L) or (not Stream))
     return 0;
   lua_pushnumber(L, SDL_GetAudioStreamQueued(Stream) / sizeof(float));
   return 1;
 }
 
 int Lua_Queue_Audio(lua_State *L) {
-  if (not L)
+  if ((not L) or (not Stream))
     return 0;
 
   const size_t a{(size_t)lua_tointeger(L, 2)};
@@ -42,6 +44,7 @@ int Lua_Queue_Audio(lua_State *L) {
 }
 
 int Lua_Dequeue_Audio(lua_State *L) {
-  SDL_ClearAudioStream(Stream);
+  if (Stream)
+    SDL_ClearAudioStream(Stream);
   return 0;
 }

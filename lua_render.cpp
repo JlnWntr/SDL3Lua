@@ -54,7 +54,7 @@ int Lua_Draw_Rect(lua_State *L) {
   return 0;
 }
 
-int Lua_Render_Texture(lua_State *L) {
+int Lua_Blit_Texture(lua_State *L) {
  
   if (not L) {
     return 0;
@@ -63,6 +63,7 @@ int Lua_Render_Texture(lua_State *L) {
   SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)}; 
 
   if (not texture) {
+    SDL_Log("App render error: could not find this texture");
     return 0;
   }
 
@@ -105,7 +106,7 @@ int Lua_Get_Size_Texture(lua_State *L) {
 }
 
 
-int Lua_Render_Texture_Rotated(lua_State *L) {
+int Lua_Blit_Texture_Rotated(lua_State *L) {
  
   if (not L) {
     return 0;
@@ -124,6 +125,22 @@ int Lua_Render_Texture_Rotated(lua_State *L) {
   const double angle{lua_tonumber(L, 10)};
   SDL_RenderTextureRotated(Renderer, texture, &blit, &blot, angle, NULL,
                            SDL_FLIP_NONE);
+
+  return 0;
+}
+
+int Lua_Render_Texture(lua_State *L) {
+  if (not L)
+    return 0;
+
+  SDL_Texture *const texture{(SDL_Texture *)lua_touserdata(L, 1)}; 
+
+  if (not texture) 
+    return 0;
+ 
+
+  const SDL_FRect blot{(float)lua_tonumber(L, 2), (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4), (float)lua_tonumber(L, 5)};
+  SDL_RenderTexture(Renderer, texture, NULL, &blot);
 
   return 0;
 }
