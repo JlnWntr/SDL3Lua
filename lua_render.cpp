@@ -192,7 +192,6 @@ int Lua_Load_Image(lua_State *L) {
   if (not surface) 
     SDL_Log("Couldn't load image: %s", SDL_GetError());
    else {
-    SDL_Surface *surface{nullptr};    
     texture = SDL_CreateTextureFromSurface(Renderer, surface); 
     
     if (not texture)
